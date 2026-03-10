@@ -721,153 +721,113 @@ body {
 </div>
 
 <script>
-/* ─── CONFIG ──────────────────────────────────────────
-   Replace with your actual Cloudflare Worker URL.
-   Worker must expose:  GET /logs  → JSON array of log objects
-   ─────────────────────────────────────────────────── */
-const WORKER_URL = 'https://beaker-caption-log.boyofipanema.workers.dev/';
+const WORKER_URL = 'https://beaker-caption-log.boyofipanema.workers.dev';
 
-/* ─── DEMO DATA (used when WORKER_URL not set) ──────── */
+/* ── DEMO DATA (fallback) ───────────────────────────── */
 const DEMO_DATA = [
   {
-    id: 'log_1749001200000',
+    id: 'demo_1',
     timestamp: '2025-06-04T14:32:00Z',
     brand: 'GANNI',
-    attribution: 'SS25 Drop — The Butterfly Print Midi Dress. Now in-store & online.',
-    params: { editorial: 60, emotional: 30, tone: 7 },
-    optionA: 'print that does the talking. butterfly midi — now here, now yours. 🦋\n\n#GANNI #SS25 #GanniGirl',
-    optionB: 'some things just feel right the moment you put them on. the butterfly print midi is one of those things. in-store & online now.\n\n#GANNI #NewIn',
-    selected: 'A',
+    confirmedVer: 'A',
+    confirmedText: 'print that does the talking. butterfly midi, now here and ready. 🦋
+
+#GANNI #SS25',
     revisionDepth: 1,
-    revisedText: 'print that does the talking. butterfly midi, now here and ready for wherever you are this season. 🦋\n\n#GANNI #SS25 #GanniGirl',
-    confirmedText: 'print that does the talking. butterfly midi, now here and ready. 🦋\n\n#GANNI #SS25',
-    matchedSamples: ['GS_041', 'GS_078', 'GS_112']
+    params: { editorial: 60, emotional: 30, tone: 7, emoji: '있음', length: '보통', hookLang: '영어' },
+    matchedSampleIds: ['GS_041', 'GS_078', 'GS_112']
   },
   {
-    id: 'log_1748952000000',
+    id: 'demo_2',
     timestamp: '2025-06-03T23:20:00Z',
     brand: 'AURALEE',
-    attribution: 'FW25 Preview — Merino Wool Oversized Coat. Pre-order opens Friday.',
-    params: { editorial: 80, emotional: 15, tone: 8 },
-    optionA: 'the coat that anchors everything else. merino wool, cut generously, made to last.\n\n#AURALEE #FW25',
-    optionB: 'quiet authority. the fw25 oversized merino coat — pre-order opens friday.\n\n#AURALEE #NewSeason',
-    selected: 'B',
+    confirmedVer: 'B',
+    confirmedText: 'quiet authority. the fw25 oversized merino coat — pre-order opens friday.
+
+#AURALEE #NewSeason',
     revisionDepth: 0,
-    revisedText: null,
-    confirmedText: 'quiet authority. the fw25 oversized merino coat — pre-order opens friday.\n\n#AURALEE #NewSeason',
-    matchedSamples: ['GS_023', 'GS_055', 'GS_089']
+    params: { editorial: 80, emotional: 15, tone: 8, emoji: '없음', length: '짧게', hookLang: '영어' },
+    matchedSampleIds: ['GS_023', 'GS_055']
   },
   {
-    id: 'log_1748865600000',
+    id: 'demo_3',
     timestamp: '2025-06-03T00:00:00Z',
     brand: 'BEAKER',
-    attribution: '10th Anniversary — Limited capsule collection. In-store only.',
-    params: { editorial: 50, emotional: 45, tone: 6 },
-    optionA: '10년. 그 시간이 담긴 캡슐 컬렉션. 비이커에서만.\n\n#BEAKER #10thAnniversary',
-    optionB: '처음처럼, 지금처럼. 비이커 10주년 한정 컬렉션 — 오프라인 단독.\n\n#BEAKER',
-    selected: 'B',
+    confirmedVer: 'B-1',
+    confirmedText: '처음처럼, 지금처럼.
+비이커 10주년 한정 캡슐 — 오프라인 단독.
+
+#BEAKER #10thAnniversary',
     revisionDepth: 2,
-    revisedText: '처음처럼, 지금처럼. 비이커 10주년 한정 캡슐 컬렉션 — 오프라인에서만 만날 수 있습니다.\n\n#BEAKER #10thAnniversary',
-    confirmedText: '처음처럼, 지금처럼.\n비이커 10주년 한정 캡슐 — 오프라인 단독.\n\n#BEAKER #10thAnniversary',
-    matchedSamples: ['GS_007', 'GS_034', 'GS_101']
-  },
-  {
-    id: 'log_1748779200000',
-    timestamp: '2025-06-02T00:00:00Z',
-    brand: 'GIM CONTEXT',
-    attribution: 'SS25 — Seersucker Stripe Trousers. Available now.',
-    params: { editorial: 40, emotional: 55, tone: 5 },
-    optionA: 'texture you can hear. the seersucker stripe trousers — available now.\n\n#GIMCONTEXT #SS25',
-    optionB: 'easy, interesting, exactly right for the season. seersucker stripe trousers, now available.\n\n#GIMCONTEXT',
-    selected: 'A',
-    revisionDepth: 0,
-    revisedText: null,
-    confirmedText: 'texture you can hear. the seersucker stripe trousers — available now.\n\n#GIMCONTEXT #SS25',
-    matchedSamples: ['GS_062', 'GS_088', 'GS_115']
-  },
-  {
-    id: 'log_1748692800000',
-    timestamp: '2025-06-01T00:00:00Z',
-    brand: 'GANNI',
-    attribution: 'Popup — Garosu-gil store opening. June 7–14.',
-    params: { editorial: 35, emotional: 60, tone: 4 },
-    optionA: '가로수길이 조금 달라집니다. GANNI 팝업 — 6.7–14.\n\n#GANNI #Popup #가로수길',
-    optionB: '일주일 동안, 여기서. 가니 팝업 @ 가로수길 6월 7일–14일.\n\n#GANNI',
-    selected: 'A',
-    revisionDepth: 1,
-    revisedText: '가로수길이 조금 달라집니다. GANNI 팝업 — 6월 7일부터 14일까지.\n\n#GANNI #Popup #가로수길',
-    confirmedText: '가로수길이 조금 달라집니다.\nGANNI 팝업 6.7–14 @ 가로수길.\n\n#GANNI #Popup',
-    matchedSamples: ['GS_019', 'GS_047', 'GS_093']
+    params: { editorial: 50, emotional: 45, tone: 6, emoji: '없음', length: '보통', hookLang: '한국어' },
+    matchedSampleIds: ['GS_007', 'GS_034']
   }
 ];
 
-/* ─── STATE ─────────────────────────────────────────── */
+/* ── STATE ───────────────────────────────────────────── */
 let allLogs = [];
 let filtered = [];
 let sortCol = 'date';
 let sortDir = 'desc';
+let isDemo = false;
 
-/* ─── INIT ───────────────────────────────────────────── */
+/* ── INIT ────────────────────────────────────────────── */
 async function init() {
-  if (!WORKER_URL || WORKER_URL === 'YOUR_WORKER_URL_HERE') {
+  try {
+    const res = await fetch(`${WORKER_URL}/logs?limit=200`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    allLogs = Array.isArray(data) ? data : (data.logs || []);
+    if (allLogs.length === 0) {
+      // empty but connected — show empty state
+    }
+    render();
+  } catch (e) {
+    isDemo = true;
     document.getElementById('demoBanner').style.display = 'flex';
     allLogs = DEMO_DATA;
     render();
-    return;
-  }
-  try {
-    const res = await fetch(`${WORKER_URL}/logs`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    allLogs = await res.json();
-    render();
-  } catch (e) {
-    document.getElementById('stateWrap').innerHTML = `
-      <span style="font-size:22px;opacity:.3">⚠</span>
-      <span class="state-label">Connection failed</span>
-      <span class="state-sub">${e.message}<br>Check Worker URL and CORS settings.</span>`;
+    console.warn('Worker unreachable, demo mode:', e.message);
   }
 }
 
-/* ─── SORT ───────────────────────────────────────────── */
+/* ── SORT ────────────────────────────────────────────── */
 function sortBy(col) {
-  if (sortCol === col) {
-    sortDir = sortDir === 'asc' ? 'desc' : 'asc';
-  } else {
-    sortCol = col;
-    sortDir = col === 'date' ? 'desc' : 'asc';
-  }
+  if (sortCol === col) sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+  else { sortCol = col; sortDir = col === 'date' ? 'desc' : 'asc'; }
   document.querySelectorAll('.col-hd-cell').forEach(c => c.classList.remove('sorted'));
   document.querySelectorAll('.sort-icon').forEach(c => c.textContent = '↕');
   const el = document.querySelector(`[data-col="${col}"]`);
-  if (el) {
-    el.classList.add('sorted');
-    el.querySelector('.sort-icon').textContent = sortDir === 'asc' ? '↑' : '↓';
-  }
+  if (el) { el.classList.add('sorted'); el.querySelector('.sort-icon').textContent = sortDir === 'asc' ? '↑' : '↓'; }
   render();
 }
 
-/* ─── FILTER ─────────────────────────────────────────── */
+/* ── FILTER ──────────────────────────────────────────── */
 function applyFilters() {
-  const brand   = document.getElementById('fBrand').value.trim().toLowerCase();
-  const attrib  = document.getElementById('fAttrib').value.trim().toLowerCase();
-  const sel     = document.getElementById('fSelected').value;
-  const rev     = document.getElementById('fRevision').value;
-  const dateFrom= document.getElementById('fDateFrom').value;
-  const dateTo  = document.getElementById('fDateTo').value;
+  const brand    = document.getElementById('fBrand').value.trim().toLowerCase();
+  const attrib   = document.getElementById('fAttrib').value.trim().toLowerCase();
+  const sel      = document.getElementById('fSelected').value;
+  const rev      = document.getElementById('fRevision').value;
+  const dateFrom = document.getElementById('fDateFrom').value;
+  const dateTo   = document.getElementById('fDateTo').value;
 
   filtered = allLogs.filter(log => {
-    if (brand  && !log.brand.toLowerCase().includes(brand)) return false;
-    if (attrib && !log.attribution.toLowerCase().includes(attrib)) return false;
-    if (sel    && log.selected !== sel) return false;
-    if (rev === '0'  && log.revisionDepth !== 0) return false;
-    if (rev === '1'  && log.revisionDepth !== 1) return false;
-    if (rev === '2+' && log.revisionDepth < 2) return false;
+    if (brand  && !(log.brand||'').toLowerCase().includes(brand)) return false;
+    if (attrib && !(log.confirmedText||'').toLowerCase().includes(attrib) && !(log.params?.attribution||'').toLowerCase().includes(attrib)) return false;
+    if (sel) {
+      const ver = (log.confirmedVer || '').toUpperCase();
+      if (sel === 'A' && !ver.startsWith('A')) return false;
+      if (sel === 'B' && !ver.startsWith('B')) return false;
+    }
+    const depth = log.revisionDepth ?? 0;
+    if (rev === '0'  && depth !== 0) return false;
+    if (rev === '1'  && depth !== 1) return false;
+    if (rev === '2+' && depth < 2)   return false;
     const ts = new Date(log.timestamp);
     if (dateFrom && ts < new Date(dateFrom)) return false;
     if (dateTo   && ts > new Date(dateTo + 'T23:59:59')) return false;
     return true;
   });
-
   renderList();
 }
 
@@ -879,18 +839,17 @@ function resetFilters() {
   renderList();
 }
 
-/* ─── RENDER ─────────────────────────────────────────── */
+/* ── RENDER ──────────────────────────────────────────── */
 function render() {
   filtered = [...allLogs];
   renderList();
 }
 
 function renderList() {
-  // sort
   filtered.sort((a, b) => {
     let va, vb;
-    if (sortCol === 'date') { va = new Date(a.timestamp); vb = new Date(b.timestamp); }
-    else if (sortCol === 'brand') { va = a.brand; vb = b.brand; }
+    if (sortCol === 'date')  { va = new Date(a.timestamp); vb = new Date(b.timestamp); }
+    else if (sortCol === 'brand') { va = (a.brand||'').toLowerCase(); vb = (b.brand||'').toLowerCase(); }
     else { va = a[sortCol] ?? ''; vb = b[sortCol] ?? ''; }
     if (va < vb) return sortDir === 'asc' ? -1 : 1;
     if (va > vb) return sortDir === 'asc' ? 1 : -1;
@@ -902,9 +861,9 @@ function renderList() {
 
   if (filtered.length === 0) {
     wrap.innerHTML = `<div class="state-wrap">
-      <span style="font-size:28px;opacity:.2">∅</span>
+      <span style="font-size:28px;opacity:.3">∅</span>
       <span class="state-label">No results</span>
-      <span class="state-sub">Try adjusting your filters.</span>
+      <span class="state-sub">필터 조건을 조정해보세요.</span>
     </div>`;
     return;
   }
@@ -912,29 +871,38 @@ function renderList() {
   wrap.innerHTML = filtered.map(log => rowHTML(log)).join('');
 }
 
+/* ── ROW HTML (index-level data only) ────────────────── */
 function rowHTML(log) {
   const dt = new Date(log.timestamp);
-  const dateStr = dt.toLocaleDateString('ko-KR', {year:'2-digit', month:'2-digit', day:'2-digit'}).replace(/\. /g,'.').replace('.','');
-  const timeStr = dt.toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit'});
+  const dateStr = dt.toLocaleDateString('ko-KR', {year:'2-digit',month:'2-digit',day:'2-digit'}).replace(/\. /g,'.').replace(/\.$/,'');
+  const timeStr = dt.toLocaleTimeString('ko-KR', {hour:'2-digit',minute:'2-digit'});
 
-  const revBadge = log.revisionDepth === 0
-    ? `<span class="rev-badge none">No revision</span>`
-    : log.revisionDepth === 1
-    ? `<span class="rev-badge one">1 revision</span>`
-    : `<span class="rev-badge multi">${log.revisionDepth} revisions</span>`;
+  const p   = log.params || {};
+  const ed  = p.editorial ?? null;
+  const em  = p.emotional ?? null;
+  const tn  = p.tone ?? null;
+  const depth = log.revisionDepth ?? null;
 
-  const revText = (log.revisionDepth > 0 && log.revisedText)
-    ? `<div class="rev-text">${esc(log.revisedText)}</div>` : '';
+  const revBadge = depth === null ? '' :
+    depth === 0 ? `<span class="rev-badge none">No revision</span>` :
+    depth === 1 ? `<span class="rev-badge one">1 revision</span>` :
+                  `<span class="rev-badge multi">${depth} revisions</span>`;
 
-  const ed  = log.params?.editorial ?? 0;
-  const em  = log.params?.emotional ?? 0;
-  const tn  = log.params?.tone ?? 0;
+  const verBadge = log.confirmedVer
+    ? `<span class="rev-badge ${log.confirmedVer.includes('-') ? 'one' : 'none'}" style="text-transform:uppercase">${esc(log.confirmedVer)}</span>`
+    : '';
 
-  const selA = log.selected === 'A' ? `<span class="d-selected">Selected</span>` : '';
-  const selB = log.selected === 'B' ? `<span class="d-selected">Selected</span>` : '';
-
-  const matchList = (log.matchedSamples ?? []).map(s =>
-    `<div class="d-sample-id">${esc(s)}</div>`).join('');
+  const paramsHTML = (ed !== null) ? `
+    <div class="param-row"><span class="param-key">ED</span>
+      <div class="param-bar"><div class="param-fill" style="width:${ed}%"></div></div>
+      <span class="param-val">${ed}</span></div>
+    <div class="param-row"><span class="param-key">EM</span>
+      <div class="param-bar"><div class="param-fill" style="width:${em}%"></div></div>
+      <span class="param-val">${em}</span></div>
+    <div class="param-row"><span class="param-key">TONE</span>
+      <div class="param-bar"><div class="param-fill" style="width:${tn*10}%"></div></div>
+      <span class="param-val">${tn}</span></div>` :
+    `<span style="font-size:11px;color:var(--ink3)">—</span>`;
 
   return `<div class="row" id="${log.id}" onclick="toggleRow('${log.id}')">
     <div class="row-main">
@@ -942,90 +910,106 @@ function rowHTML(log) {
         <span class="c-date-d">${dateStr}</span>
         <span class="c-date-t">${timeStr}</span>
       </div>
-      <div class="cell"><span class="c-brand">${esc(log.brand)}</span></div>
-      <div class="cell"><span class="cell-attrib">${esc(log.attribution)}</span></div>
-      <div class="cell cell-params">
-        <div class="param-row">
-          <span class="param-key">ED</span>
-          <div class="param-bar"><div class="param-fill" style="width:${ed}%"></div></div>
-          <span class="param-val">${ed}</span>
-        </div>
-        <div class="param-row">
-          <span class="param-key">EM</span>
-          <div class="param-bar"><div class="param-fill" style="width:${em}%"></div></div>
-          <span class="param-val">${em}</span>
-        </div>
-        <div class="param-row">
-          <span class="param-key">TONE</span>
-          <div class="param-bar"><div class="param-fill" style="width:${tn*10}%"></div></div>
-          <span class="param-val">${tn}</span>
-        </div>
-      </div>
-      <div class="cell"><span class="cell-output">${esc(log.optionA)}</span></div>
-      <div class="cell cell-rev">${revBadge}${revText}</div>
+      <div class="cell"><span class="c-brand">${esc(log.brand || '—')}</span></div>
+      <div class="cell"><span class="cell-attrib" style="font-size:11px;color:var(--ink3);font-family:var(--mono)">${esc(log.confirmedVer || '—')}</span></div>
+      <div class="cell cell-params">${paramsHTML}</div>
+      <div class="cell"><span style="font-size:11px;color:var(--ink3)">클릭하여 확인 ↓</span></div>
+      <div class="cell cell-rev">${revBadge}</div>
       <div class="cell cell-confirm">
-        <span class="confirm-badge">✓ Confirmed</span>
-        <span class="confirm-text">${esc(log.confirmedText)}</span>
+        ${verBadge}
+        <span class="confirm-text">${esc(log.confirmedText || '')}</span>
       </div>
     </div>
-    <div class="row-detail">
-      <div class="detail-inner">
-        <div class="detail-col">
-          <div class="d-label">A / B Output</div>
-          <div class="d-option">
-            <div class="d-opt-tag">Option A ${selA}</div>
-            <div class="d-opt-body">${esc(log.optionA)}</div>
-          </div>
-          <div class="d-option">
-            <div class="d-opt-tag">Option B ${selB}</div>
-            <div class="d-opt-body">${esc(log.optionB)}</div>
-          </div>
+    <div class="row-detail" id="detail-${log.id}"></div>
+  </div>`;
+}
+
+/* ── DETAIL HTML (full logEntry from /log/:id) ───────── */
+function detailHTML(log) {
+  const p = log.params || {};
+  const matchList = (log.matchedSampleIds || log.matchedSamples || [])
+    .map(s => `<div class="d-sample-id">${esc(s)}</div>`).join('');
+
+  const optA = log.optionA || log.resultA || null;
+  const optB = log.optionB || log.resultB || null;
+
+  const selA = (log.confirmedVer||'').toUpperCase().startsWith('A') ? `<span class="d-selected">Selected</span>` : '';
+  const selB = (log.confirmedVer||'').toUpperCase().startsWith('B') ? `<span class="d-selected">Selected</span>` : '';
+
+  return `<div class="detail-inner">
+    <div class="detail-col">
+      <div class="d-label">A / B Output</div>
+      ${optA ? `<div class="d-option"><div class="d-opt-tag">Option A ${selA}</div><div class="d-opt-body">${esc(optA)}</div></div>` : ''}
+      ${optB ? `<div class="d-option"><div class="d-opt-tag">Option B ${selB}</div><div class="d-opt-body">${esc(optB)}</div></div>` : ''}
+      ${(!optA && !optB) ? `<div style="font-size:12px;color:var(--ink3);padding:4px 0">A/B 원문은 현재 로그 스키마에 포함되지 않습니다.<br>향후 index.html 업데이트 시 추가됩니다.</div>` : ''}
+    </div>
+    <div class="detail-col">
+      <div class="d-label">Confirmed Text</div>
+      <div class="d-confirm-full">${esc(log.confirmedText || '')}</div>
+      <div style="margin-top:18px">
+        <div class="d-label">Parameters</div>
+        <div class="d-meta-grid">
+          <div class="d-meta-item"><div class="d-meta-key">Confirmed Ver</div><div class="d-meta-val">${esc(log.confirmedVer||'—')}</div></div>
+          <div class="d-meta-item"><div class="d-meta-key">Revisions</div><div class="d-meta-val">${log.revisionDepth??0}</div></div>
+          <div class="d-meta-item"><div class="d-meta-key">Editorial</div><div class="d-meta-val">${p.editorial??'—'}%</div></div>
+          <div class="d-meta-item"><div class="d-meta-key">Emotional</div><div class="d-meta-val">${p.emotional??'—'}%</div></div>
+          <div class="d-meta-item"><div class="d-meta-key">Tone</div><div class="d-meta-val">${p.tone??'—'}</div></div>
+          <div class="d-meta-item"><div class="d-meta-key">Hook Lang</div><div class="d-meta-val">${esc(p.hookLang||'—')}</div></div>
+          <div class="d-meta-item"><div class="d-meta-key">Length</div><div class="d-meta-val">${esc(p.length||'—')}</div></div>
+          <div class="d-meta-item"><div class="d-meta-key">Emoji</div><div class="d-meta-val">${esc(p.emoji||'—')}</div></div>
         </div>
-        <div class="detail-col">
-          <div class="d-label">Confirmed Text</div>
-          <div class="d-confirm-full">${esc(log.confirmedText)}</div>
-          <div style="margin-top:18px">
-            <div class="d-label">Meta</div>
-            <div class="d-meta-grid">
-              <div class="d-meta-item">
-                <div class="d-meta-key">Selected</div>
-                <div class="d-meta-val">Option ${esc(log.selected)}</div>
-              </div>
-              <div class="d-meta-item">
-                <div class="d-meta-key">Revisions</div>
-                <div class="d-meta-val">${log.revisionDepth}</div>
-              </div>
-              <div class="d-meta-item">
-                <div class="d-meta-key">Editorial %</div>
-                <div class="d-meta-val">${ed}%</div>
-              </div>
-              <div class="d-meta-item">
-                <div class="d-meta-key">Emotional %</div>
-                <div class="d-meta-val">${em}%</div>
-              </div>
-            </div>
-            ${log.matchedSamples?.length ? `<div class="d-label" style="margin-top:14px">Matched Samples</div><div class="d-samples">${matchList}</div>` : ''}
-          </div>
-        </div>
+        ${matchList ? `<div class="d-label" style="margin-top:14px">Matched Samples</div><div class="d-samples">${matchList}</div>` : ''}
       </div>
     </div>
   </div>`;
 }
 
-function toggleRow(id) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.classList.toggle('open');
+/* ── TOGGLE ROW (lazy-load detail) ───────────────────── */
+async function toggleRow(id) {
+  const row = document.getElementById(id);
+  if (!row) return;
+
+  if (row.classList.contains('open')) {
+    row.classList.remove('open');
+    return;
+  }
+
+  const detail = document.getElementById(`detail-${id}`);
+
+  // Already loaded
+  if (row.dataset.loaded) {
+    row.classList.add('open');
+    return;
+  }
+
+  // Show loading
+  detail.innerHTML = `<div style="padding:18px 22px;font-family:var(--mono);font-size:11px;color:var(--ink3);letter-spacing:.06em">Loading…</div>`;
+  row.classList.add('open');
+
+  if (isDemo) {
+    // Demo: use allLogs data directly
+    const log = allLogs.find(l => l.id === id);
+    if (log) { detail.innerHTML = detailHTML(log); row.dataset.loaded = '1'; }
+    return;
+  }
+
+  try {
+    const res = await fetch(`${WORKER_URL}/log/${id}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const log = await res.json();
+    detail.innerHTML = detailHTML(log);
+    row.dataset.loaded = '1';
+  } catch(e) {
+    detail.innerHTML = `<div style="padding:18px 22px;font-family:var(--mono);font-size:12px;color:var(--red)">${e.message}</div>`;
+  }
 }
 
 function esc(str) {
   if (!str) return '';
   return String(str)
-    .replace(/&/g,'&amp;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;')
-    .replace(/\n/g, '&#10;');
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/
+/g,'&#10;');
 }
 
 init();
