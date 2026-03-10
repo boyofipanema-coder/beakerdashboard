@@ -773,21 +773,31 @@ let isDemo = false;
 
 /* ── INIT ────────────────────────────────────────────── */
 async function init() {
+  // 10초 타임아웃 — 무한로딩 방지
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10000);
+
   try {
-    const res = await fetch(`${WORKER_URL}/logs?limit=200`);
+    const res = await fetch(`${WORKER_URL}/logs?limit=200`, {
+      signal: controller.signal,
+      headers: { 'Accept': 'application/json' }
+    });
+    clearTimeout(timer);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     allLogs = Array.isArray(data) ? data : (data.logs || []);
-    if (allLogs.length === 0) {
-      // empty but connected — show empty state
-    }
     render();
   } catch (e) {
+    clearTimeout(timer);
+    if (e.name === 'AbortError') {
+      console.warn('Worker timeout');
+    } else {
+      console.warn('Worker fetch failed:', e.message);
+    }
     isDemo = true;
     document.getElementById('demoBanner').style.display = 'flex';
     allLogs = DEMO_DATA;
     render();
-    console.warn('Worker unreachable, demo mode:', e.message);
   }
 }
 
@@ -846,6 +856,9 @@ function render() {
 }
 
 function renderList() {
+  const sw = document.getElementById('stateWrap');
+  if (sw) sw.style.display = 'none';
+
   filtered.sort((a, b) => {
     let va, vb;
     if (sortCol === 'date')  { va = new Date(a.timestamp); vb = new Date(b.timestamp); }
